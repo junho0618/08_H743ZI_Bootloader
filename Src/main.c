@@ -58,6 +58,11 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+PUTCHAR_PROTOTYPE
+{
+    HAL_UART_Transmit(&PRINTF_UART_PORT, (uint8_t *)&ch, 1, 0xFFFF);
+    return ch;
+}
 
 /* USER CODE END 0 */
 
@@ -93,6 +98,7 @@ int main(void)
   MX_USB_DEVICE_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
+  printf( "Start Bootloader...\r\n" );
 
   /* USER CODE END 2 */
 
@@ -135,8 +141,8 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 2;
-  RCC_OscInitStruct.PLL.PLLN = 64;
+  RCC_OscInitStruct.PLL.PLLM = 1;
+  RCC_OscInitStruct.PLL.PLLN = 100;
   RCC_OscInitStruct.PLL.PLLP = 2;
   RCC_OscInitStruct.PLL.PLLQ = 2;
   RCC_OscInitStruct.PLL.PLLR = 2;
