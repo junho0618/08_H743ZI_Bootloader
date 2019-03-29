@@ -26,7 +26,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <string.h>
+#include "usbd_dfu.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -47,7 +48,8 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+pFunction	Jump_To_Application;
+uint32_t	JumpAddress;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -95,11 +97,36 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
-  MX_USB_DEVICE_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
   printf( "Start Bootloader...\r\n" );
 
+  if( HAL_GPIO_ReadPin( BTN_USER_GPIO_Port, BTN_USER_Pin ) != GPIO_PIN_SET )
+  {
+	  printf( "USBD_DFU_APP_DEFAULT_ADD..[0x%08x]\r\n", (*(__IO uint32_t*)USBD_DFU_APP_DEFAULT_ADD));
+	  if( ((*(__IO uint32_t*)USBD_DFU_APP_DEFAULT_ADD) & 0x2FFE0000 ) == 0x20000000 )
+	  {
+		  printf( "APP Start..\r\n" );
+
+			// 1. Disable Interrupt
+			__disable_irq();
+
+			// 2. Initialize user application's Stack Pointer
+			__set_MSP(*(__IO uint32_t*)USBD_DFU_APP_DEFAULT_ADD);
+			
+			// 3. Initialize user application's VTOR Register
+			SCB->VTOR=USBD_DFU_APP_DEFAULT_ADD;
+			
+			// 4. Jump to user application
+			JumpAddress = *(__IO uint32_t*)(USBD_DFU_APP_DEFAULT_ADD + 4);
+			Jump_To_Application = (pFunction)JumpAddress;
+			Jump_To_Application();
+	  }
+  }
+  
+  printf( "DFU Upgrade Mode Start..\r\n" );
+
+  MX_USB_DEVICE_Init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
