@@ -49,8 +49,6 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-pFunction	Jump_To_Application;
-uint32_t	JumpAddress;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -61,12 +59,6 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-PUTCHAR_PROTOTYPE
-{
-    HAL_UART_Transmit(&PRINTF_UART_PORT, (uint8_t *)&ch, 1, 0xFFFF);
-    return ch;
-}
-
 /* USER CODE END 0 */
 
 /**
@@ -102,7 +94,7 @@ int main(void)
   
   /* USER CODE BEGIN 2 */
   
-	printf( "Start Bootloader...\r\n" );
+	jprintf( "Start Bootloader...\r\n" );
 	
 	MainProcess();
   /* USER CODE END 2 */

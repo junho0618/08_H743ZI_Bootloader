@@ -14,91 +14,91 @@ void printFirmwareInfo( void )
 {
 	uint32_t	i;
 	
-	printf( "\n\n\r==================================================\r\n" );
-	printf( "===   Print Firmware Info   ======================\r\n" );
-	printf( "==================================================\r\n" );
-	printf( "mucUpdated : 0x%02x\r\n", gstruFwInfo.mucUpdated );
+	jprintf( "==================================================\r\n" );
+	jiprintf( "===   Print Firmware Info   ======================\r\n" );
+	jprintf( "==================================================\r\n" );
+	jprintf( "mucUpdated : 0x%02x\r\n", gstruFwInfo.mucUpdated );
 		
 	// Model Name
-	printf( "Model Name : %s\r\n", gstruFwInfo.marrucModelName );
+	jprintf( "Model Name : %s\r\n", gstruFwInfo.marrucModelName );
 	
 	// Serial Number
-	printf( "Serial Number : 0x" );
+	jprintf( "Serial Number : 0x" );
 	for( i = 0; i < SERIAL_NUMBER_SIZE; i++ )
 	{
-		printf( "%02x", gstruFwInfo.marrucSerialNo[i] );
+		jprintf( "%02x", gstruFwInfo.marrucSerialNo[i] );
 	}
-	printf( "\r\n" );
+	jprintf( "\r\n" );
 	
 	// Bootloader Info
-	printf( "==================================================\r\n" );
-	printf( "Bootloader Version : 0x" );
+	jprintf( "==================================================\r\n" );
+	jiprintf( "Bootloader Version : 0x" );
 	for( i = 0; i < VERSION_SIZE; i++ )
 	{
-		printf( "%02x", gstruFwInfo.mstruBlInfo.marrucVersion[i] );
+		jiprintf( "%02x", gstruFwInfo.mstruBlInfo.marrucVersion[i] );
 	}
-	printf( "\r\n" );
+	jprintf( "\r\n" );
 	
-	printf( "Bootloader Jump Address : 0x%08x\r\n", gstruFwInfo.mstruBlInfo.mJumpAddress );
-	printf( "Bootloader Size : 0x%08x\r\n", gstruFwInfo.mstruBlInfo.mSize );
-	printf( "Bootloader CheckSum : 0x%08x\r\n", gstruFwInfo.mstruBlInfo.mCheckSum );
+	jprintf( "Bootloader Jump Address : 0x%08x\r\n", gstruFwInfo.mstruBlInfo.mJumpAddress );
+	jprintf( "Bootloader Size : 0x%08x\r\n", gstruFwInfo.mstruBlInfo.mSize );
+	jprintf( "Bootloader CheckSum : 0x%08x\r\n", gstruFwInfo.mstruBlInfo.mCheckSum );
 	
 	// Main Application Info
-	printf( "==================================================\r\n" );
-	printf( "Main Application \r\n" );
-	printf( "Application Version : 0x" );
+	jprintf( "==================================================\r\n" );
+	jiprintf( "Main Application \r\n" );
+	jiprintf( "Application Version : 0x" );
 	for( i = 0; i < VERSION_SIZE; i++ )
 	{
-		printf( "%02x", gstruFwInfo.mstruMainAppInfo.marrucVersion[i] );
+		jiprintf( "%02x", gstruFwInfo.mstruMainAppInfo.marrucVersion[i] );
 	}
-	printf( "\r\n" );
+	jprintf( "\r\n" );
 	
-	printf( "Application Jump Address : 0x%08x\r\n", gstruFwInfo.mstruMainAppInfo.mJumpAddress );
-	printf( "Application Size : 0x%08x\r\n", gstruFwInfo.mstruMainAppInfo.mSize );
-	printf( "Application CheckSum : 0x%08x\r\n", gstruFwInfo.mstruMainAppInfo.mCheckSum );
+	jprintf( "Application Jump Address : 0x%08x\r\n", gstruFwInfo.mstruMainAppInfo.mJumpAddress );
+	jprintf( "Application Size : 0x%08x\r\n", gstruFwInfo.mstruMainAppInfo.mSize );
+	jprintf( "Application CheckSum : 0x%08x\r\n", gstruFwInfo.mstruMainAppInfo.mCheckSum );
 	
 	// Update Application Info
-	printf( "==================================================\r\n" );
-	printf( "Update Application \r\n" );
-	printf( "Application Version : 0x" );
+	jprintf( "==================================================\r\n" );
+	jiprintf( "Update Application \r\n" );
+	jiprintf( "Application Version : 0x" );
 	for( i = 0; i < VERSION_SIZE; i++ )
 	{
-		printf( "%02x", gstruFwInfo.mstruUpdateAppInfo.marrucVersion[i] );
+		jiprintf( "%02x", gstruFwInfo.mstruUpdateAppInfo.marrucVersion[i] );
 	}
-	printf( "\r\n" );
+	jprintf( "\r\n" );
 	
-	printf( "Application Jump Address : 0x%08x\r\n", gstruFwInfo.mstruUpdateAppInfo.mJumpAddress );
-	printf( "Application Size : 0x%08x\r\n", gstruFwInfo.mstruUpdateAppInfo.mSize );
-	printf( "Application CheckSum : 0x%08x\r\n", gstruFwInfo.mstruUpdateAppInfo.mCheckSum );
+	jprintf( "Application Jump Address : 0x%08x\r\n", gstruFwInfo.mstruUpdateAppInfo.mJumpAddress );
+	jprintf( "Application Size : 0x%08x\r\n", gstruFwInfo.mstruUpdateAppInfo.mSize );
+	jprintf( "Application CheckSum : 0x%08x\r\n", gstruFwInfo.mstruUpdateAppInfo.mCheckSum );
 	
 	// Backup Application Info
-	printf( "==================================================\r\n" );
-	printf( "Backup Application \r\n" );
-	printf( "Application Version : 0x" );
+	jprintf( "==================================================\r\n" );
+	jiprintf( "Backup Application \r\n" );
+	jiprintf( "Application Version : 0x" );
 	for( i = 0; i < VERSION_SIZE; i++ )
 	{
-		printf( "%02x", gstruFwInfo.mstruBackupAppInfo.marrucVersion[i] );
+		jiprintf( "%02x", gstruFwInfo.mstruBackupAppInfo.marrucVersion[i] );
 	}
-	printf( "\r\n" );
+	jprintf( "\r\n" );
 	
-	printf( "Application Jump Address : 0x%08x\r\n", gstruFwInfo.mstruBackupAppInfo.mJumpAddress );
-	printf( "Application Size : 0x%08x\r\n", gstruFwInfo.mstruBackupAppInfo.mSize );
-	printf( "Application CheckSum : 0x%08x\r\n", gstruFwInfo.mstruBackupAppInfo.mCheckSum );
+	jprintf( "Application Jump Address : 0x%08x\r\n", gstruFwInfo.mstruBackupAppInfo.mJumpAddress );
+	jprintf( "Application Size : 0x%08x\r\n", gstruFwInfo.mstruBackupAppInfo.mSize );
+	jprintf( "Application CheckSum : 0x%08x\r\n", gstruFwInfo.mstruBackupAppInfo.mCheckSum );
 		
 	// Verification Application Info
-	printf( "==================================================\r\n" );
-	printf( "Verification Application \r\n" );
-	printf( "Application Version : 0x" );
+	jprintf( "==================================================\r\n" );
+	jiprintf( "Verification Application \r\n" );
+	jiprintf( "Application Version : 0x" );
 	for( i = 0; i < VERSION_SIZE; i++ )
 	{
-		printf( "%02x", gstruFwInfo.mstruVeriAppInfo.marrucVersion[i] );
+		jiprintf( "%02x", gstruFwInfo.mstruVeriAppInfo.marrucVersion[i] );
 	}
-	printf( "\r\n" );
+	jprintf( "\r\n" );
 	
-	printf( "Application Jump Address : 0x%08x\r\n", gstruFwInfo.mstruVeriAppInfo.mJumpAddress );
-	printf( "Application Size : 0x%08x\r\n", gstruFwInfo.mstruVeriAppInfo.mSize );
-	printf( "Application CheckSum : 0x%08x\r\n", gstruFwInfo.mstruVeriAppInfo.mCheckSum );
-	printf( "==================================================\r\n" );
+	jprintf( "Application Jump Address : 0x%08x\r\n", gstruFwInfo.mstruVeriAppInfo.mJumpAddress );
+	jprintf( "Application Size : 0x%08x\r\n", gstruFwInfo.mstruVeriAppInfo.mSize );
+	jprintf( "Application CheckSum : 0x%08x\r\n", gstruFwInfo.mstruVeriAppInfo.mCheckSum );
+	jprintf( "==================================================\r\n" );
 }
 
 uint32_t readFirmwareInfo( void )
@@ -150,7 +150,7 @@ void testFirmwareInfo( void )
 	ret = readFirmwareInfo();
 	if( ret )
 	{
-		printf( "Fail Read Firmware Infomation!!!\r\n" );
+		jeprintf( "Fail Read Firmware Infomation!!!\r\n" );
 		// 후처리
 	}
 	
@@ -226,7 +226,7 @@ void testFirmwareInfo( void )
 	ret = writeFirmwareInfo();
 	if( ret )
 	{
-		printf( "Fail Write Firmware Infomation!!!\r\n" );
+		jeprintf( "Fail Write Firmware Infomation!!!\r\n" );
 		// 후처리
 	}
 		
@@ -237,7 +237,7 @@ void testFirmwareInfo( void )
 	ret = readFirmwareInfo();
 	if( ret )
 	{
-		printf( "Fail Read Firmware Infomation!!!\r\n" );
+		jeprintf( "Fail Read Firmware Infomation!!!\r\n" );
 		// 후처리
 	}
 	

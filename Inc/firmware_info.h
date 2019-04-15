@@ -38,7 +38,7 @@ typedef struct _SAppInfo SAppInfo;
 
 struct _SFwInfo
 {
-	uint32_t	mucUpdated;									// update 진행 유무
+	uint8_t		mucUpdated;									// update 진행 유무
 	uint8_t		marrucModelName[MODEL_NAME_SIZE];			// Model Name
 	uint8_t		marrucSerialNo[SERIAL_NUMBER_SIZE];			// Serial Number
 	SAppInfo	mstruBlInfo;								// Bootloader Info

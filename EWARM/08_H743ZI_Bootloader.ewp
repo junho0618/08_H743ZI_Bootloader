@@ -1054,6 +1054,9 @@
         <group>
             <name>User</name>
             <file>
+                <name>$PROJ_DIR$\..\Src\debug.c</name>
+            </file>
+            <file>
                 <name>$PROJ_DIR$\..\Src\firmware_info.c</name>
             </file>
             <file>

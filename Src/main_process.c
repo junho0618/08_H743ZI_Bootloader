@@ -7,20 +7,24 @@
 
 #include "main_process.h"
 #include "firmware_info.h"
+#include "usbd_dfu.h"
+#include "usb_device.h"
+
+pFunction	Jump_To_Application;
+uint32_t	JumpAddress;
 
 void MainProcess( void )
 {	
-	printf( "Start Main Process!!! \r\n" );
+	jprintf( "Start Main Process!!! \r\n" );
 	
 	testFirmwareInfo();
 	
-#if 0	
 	if( HAL_GPIO_ReadPin( BTN_USER_GPIO_Port, BTN_USER_Pin ) != GPIO_PIN_SET )
 	{
-		printf( "USBD_DFU_APP_DEFAULT_ADD..[0x%08x]\r\n", (*(__IO uint32_t*)USBD_DFU_APP_DEFAULT_ADD));
+		jprintf( "USBD_DFU_APP_DEFAULT_ADD..[0x%08x]\r\n", (*(__IO uint32_t*)USBD_DFU_APP_DEFAULT_ADD));
 		if( ((*(__IO uint32_t*)USBD_DFU_APP_DEFAULT_ADD) & 0x2FFE0000 ) == 0x20000000 )
 		{
-			printf( "APP Start..\r\n" );
+			jprintf( "APP Start..\r\n" );
 
 			// 1. Disable Interrupt
 			__disable_irq();
@@ -38,8 +42,7 @@ void MainProcess( void )
 		}
 	}
   
-	printf( "DFU Upgrade Mode Start..\r\n" );
+	jprintf( "DFU Upgrade Mode Start..\r\n" );
 
 	MX_USB_DEVICE_Init();
-#endif	
 }
