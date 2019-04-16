@@ -6,43 +6,124 @@
 **************************************************************/
 
 #include "main_process.h"
-#include "firmware_info.h"
+#include "firmware.h"
 #include "usbd_dfu.h"
 #include "usb_device.h"
+
+void IAP_Process( void );
+void jumpToApplication( uint32_t address );
 
 pFunction	Jump_To_Application;
 uint32_t	JumpAddress;
 
 void MainProcess( void )
 {	
+	uint32_t	ret = 0;
+	
 	jprintf( "Start Main Process!!! \r\n" );
-	
-	testFirmwareInfo();
-	
-	if( HAL_GPIO_ReadPin( BTN_USER_GPIO_Port, BTN_USER_Pin ) != GPIO_PIN_SET )
+
+	// Check Verification
+#if 0	// H/W 구성 후 재코딩...
+	if( HAL_GPIO_ReadPin( VERIFY_GPIO_Port, VERIFY_Pin ) )
 	{
-		jprintf( "USBD_DFU_APP_DEFAULT_ADD..[0x%08x]\r\n", (*(__IO uint32_t*)USBD_DFU_APP_DEFAULT_ADD));
-		if( ((*(__IO uint32_t*)USBD_DFU_APP_DEFAULT_ADD) & 0x2FFE0000 ) == 0x20000000 )
-		{
-			jprintf( "APP Start..\r\n" );
+		jiprintf( "Jump to Verification Application!!!\r\n" );
+		jumpToApplication( FIRMWARE_VERIFICATIONAPP_ADD );
+	}
+#endif
+	
+	// Check IAP
+#if 0	// H/W 구성 후 재코딩...
+	if( HAL_GPIO_ReadPin( IAP_GPIO_Port, IAP_Pin ) )
+	{
+		jiprintf( "Jump to Verification Application!!!\r\n" );
+		// jump IAP Process
+	}
+#endif
 
-			// 1. Disable Interrupt
-			__disable_irq();
-
-			// 2. Initialize user application's Stack Pointer
-			__set_MSP(*(__IO uint32_t*)USBD_DFU_APP_DEFAULT_ADD);
-
-			// 3. Initialize user application's VTOR Register
-			SCB->VTOR=USBD_DFU_APP_DEFAULT_ADD;
-
-			// 4. Jump to user application
-			JumpAddress = *(__IO uint32_t*)(USBD_DFU_APP_DEFAULT_ADD + 4);
-			Jump_To_Application = (pFunction)JumpAddress;
-			Jump_To_Application();
+	// Read Firmware Information
+	readFirmwareInfo();
+	
+	// Check Firmware Information Initialized
+	if( gstruFwInfo.mucInitialized != FIRMWARE_INITIALIZED )
+	{		
+		initFirmwareInfo();
+	}	
+		
+	// Check firmware updated
+	if( gstruFwInfo.mucUpdated )
+	{		
+		ret = updateMainApp();
+		if( ret == 0 )							// update OK
+		{	
+			gstruFwInfo.mucUpdated	= 0;
+			guFwChanged	= 1;
 		}
 	}
-  
+	
+	// Check Main Application CheckSum
+	do
+	{
+		ret = checkCS( &gstruFwInfo.mstruMainAppInfo );
+		if( ret )
+		{
+			// Main Application CheckSum Fail
+			if( checkCS( &gstruFwInfo.mstruBackupAppInfo ) )
+			{
+				// Backup Application CheckSum Fail
+				// jump IAP Process
+				IAP_Process();
+			}
+			else
+			{
+				// backupMainApp();
+			}
+		}
+	} while( ret );
+	
+	if( guFwChanged )
+	{
+		writeFirmwareInfo();
+	}	
+	
+	jumpToApplication( gstruFwInfo.mstruMainAppInfo.mJumpAddress );
+	
+//	testFirmwareInfo();
+}
+
+void IAP_Process( void )
+{
 	jprintf( "DFU Upgrade Mode Start..\r\n" );
 
 	MX_USB_DEVICE_Init();
+	
+	while( 1 )
+	{
+		;
+	}	
+}
+
+void jumpToApplication( uint32_t address )
+{
+	jprintf( "Jump Application Address..[0x%08x]\r\n", (*(__IO uint32_t*)address));
+	if( ((*(__IO uint32_t*)address) & 0x2FFE0000 ) == 0x20000000 )
+	{
+		// 1. Disable Interrupt
+		__disable_irq();
+
+		// 2. Initialize user application's Stack Pointer
+		__set_MSP(*(__IO uint32_t*)address);
+
+		// 3. Initialize user application's VTOR Register
+		SCB->VTOR=address;
+
+		// 4. Jump to user application
+		JumpAddress = *(__IO uint32_t*)(address + 4);
+		Jump_To_Application = (pFunction)JumpAddress;
+		Jump_To_Application();
+	}
+	
+	while( 1 )
+	{
+		;
+	}	
 }

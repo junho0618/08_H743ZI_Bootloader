@@ -21,7 +21,7 @@ void deinitFlash( void )
 	HAL_FLASH_Lock();
 }
 
-uint32_t eraseFlash( uint32_t Addr )
+uint32_t eraseFlash( uint32_t address )
 {
 	FLASH_EraseInitTypeDef	EraseInitStruct;
 	uint32_t	SectorError;
@@ -29,8 +29,8 @@ uint32_t eraseFlash( uint32_t Addr )
 	/* Fill EraseInit structure*/
 	EraseInitStruct.TypeErase		= FLASH_TYPEERASE_SECTORS;
 	EraseInitStruct.VoltageRange	= FLASH_VOLTAGE_RANGE_3;
-	EraseInitStruct.Banks			= getBank( Addr );
-	EraseInitStruct.Sector			= getSector( Addr );
+	EraseInitStruct.Banks			= getBank( address );
+	EraseInitStruct.Sector			= getSector( address );
 	EraseInitStruct.NbSectors		= 1;
     if( HAL_FLASHEx_Erase( &EraseInitStruct, &SectorError ) != HAL_OK )  
     {
@@ -41,6 +41,15 @@ uint32_t eraseFlash( uint32_t Addr )
 	return FLASH_OK;	
 }
 
+/**
+  * @brief  This function writes a data buffer in flash (data are 32-bit aligned).
+  * @note   After writing data buffer, the flash content is checked.
+  * @param  FlashAddress: start address for writing data buffer
+  * @param  Data: pointer on data buffer
+  * @param  DataLength: length of data buffer (unit is 32-bit word)   
+  * @retval 0: Data successfully written to Flash memory
+  *         1: Error occurred while writing data in Flash memory
+  */
 uint32_t writeFlash( uint32_t flashAddress, uint32_t *data, uint32_t dataLength )
 {
 	uint32_t	i = 0;
@@ -54,6 +63,7 @@ uint32_t writeFlash( uint32_t flashAddress, uint32_t *data, uint32_t dataLength 
 			if( *(uint32_t*)flashAddress != *(uint32_t*)(data + i) )
 			{   
 				/* Flash content doesn't match SRAM content */
+				jeprintf( "check fail!!!\r\n" );
 				return FLASH_FAIL;
 			}
 			   
@@ -62,6 +72,7 @@ uint32_t writeFlash( uint32_t flashAddress, uint32_t *data, uint32_t dataLength 
 		}   
 		else
 		{   
+			jeprintf( "fail write Flash!!!\r\n" );
 			/* Error occurred while writing data in Flash memory */
 			return FLASH_FAIL;
 		}   
@@ -70,25 +81,70 @@ uint32_t writeFlash( uint32_t flashAddress, uint32_t *data, uint32_t dataLength 
 	return FLASH_OK;
 }
 
-uint32_t readByteFlash( uint32_t* flashAddress, uint8_t* data, uint16_t dataLength )
+uint32_t readByteFlash( uint32_t flashAddress, uint8_t* data, uint16_t dataLength )
 {
 	uint32_t i = 0;
     
-    for( i = 0; ( i < dataLength ) && ( *flashAddress <= ( USER_FLASH_LAST_PAGE_ADDRESS - 4 ) ); i++ )
+    for( i = 0; ( i < dataLength ) && ( flashAddress <= ( USER_FLASH_LAST_PAGE_ADDRESS - 4 ) ); i++ )
     {   
-        data[i] = *(uint8_t*)*(flashAddress);
+        data[i] = *(uint8_t*)flashAddress;
         
         /* Increment FLASH destination address */
-        *flashAddress += 1;
+        flashAddress += 1;
         __DSB();
     }   
 
     return FLASH_OK;
 }
 
-uint32_t readWordFlash( uint32_t* flashAddress, uint32_t* data, uint16_t dataLength )
+uint32_t copyFlash( uint32_t srcAddress, uint32_t destAddress, uint32_t dataLength )
 {
-	return 0;
+	uint32_t	flashWord;
+	
+	// erase destination sector
+	eraseFlash( destAddress );
+	
+	// read data from source & write data to destination 
+	while( dataLength > 0 )
+	{
+		jprintf( "." );
+		
+		if( readByteFlash( srcAddress, (uint8_t*)&flashWord, 4 ) )
+		{
+			return FLASH_FAIL;
+		}
+
+		if( writeFlash( destAddress, &flashWord, 1 ) )
+		{
+			return FLASH_FAIL;
+		}		
+		
+		srcAddress	+= 32;
+		destAddress	+= 32;
+
+		if( dataLength >= 32 )
+		{
+			dataLength -= 32;
+		}
+		else
+		{
+			if( readByteFlash( srcAddress, (uint8_t*)&flashWord, dataLength ) )
+			{
+				return FLASH_FAIL;
+			}
+
+			if( writeFlash( destAddress, &flashWord, 1 ) )
+			{
+				return FLASH_FAIL;
+			}	
+			
+			break;
+		}			
+	}
+	
+	jprintf( "\r\n" );
+	
+	return FLASH_OK;	
 }
 
 static uint32_t getSector( uint32_t address )

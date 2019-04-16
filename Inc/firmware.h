@@ -1,5 +1,5 @@
-﻿#ifndef __FIRMWARE_INFO_H
-#define __FIRMWARE_INFO_H
+﻿#ifndef __FIRMWARE_H
+#define __FIRMWARE_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -10,12 +10,16 @@ extern "C" {
 /*---------------------------------------------------------------------------------------------
      Defines
 ---------------------------------------------------------------------------------------------*/
+#define FIRMWARE_INITIALIZED						0xAA
+
 #define FIRMWARE_BOOTLOADER_ADD						((uint32_t)0x08000000)
 #define FIRMWARE_MAINAPP_ADD						((uint32_t)0x08020000)
 #define FIRMWARE_UPDATEAPP_ADD						((uint32_t)0x08060000)
 #define FIRMWARE_BACKUPAPP_ADD						((uint32_t)0x080A0000)
 #define FIRMWARE_VERIFICATIONAPP_ADD				((uint32_t)0x08100000)
 #define FIRMWARE_INFO_ADD							((uint32_t)0x080E0000)
+
+#define SERIAL_NUMBER_ADD							((uint32_t)0x081E0000)
 
 #define	VERSION_SIZE								4
 #define MODEL_NAME									"New D-Loger"
@@ -38,6 +42,7 @@ typedef struct _SAppInfo SAppInfo;
 
 struct _SFwInfo
 {
+	uint8_t		mucInitialized;								// Firmware Info initialied( aa:initialized )
 	uint8_t		mucUpdated;									// update 진행 유무
 	uint8_t		marrucModelName[MODEL_NAME_SIZE];			// Model Name
 	uint8_t		marrucSerialNo[SERIAL_NUMBER_SIZE];			// Serial Number
@@ -52,9 +57,14 @@ typedef struct _SFwInfo SFwInfo;
 /*---------------------------------------------------------------------------------------------
      Functions
 ---------------------------------------------------------------------------------------------*/
+void		printSerialNumber( void );
 void		printFirmwareInfo( void );
+uint32_t	initFirmwareInfo( void );
 uint32_t	readFirmwareInfo( void );
 uint32_t	writeFirmwareInfo( void );
+
+uint32_t	checkCS( SAppInfo *appInfo );
+uint32_t	updateMainApp( void );
 
 #if ( TEST_FIRMWARE_INFO )
 void testFirmwareInfo( void );
@@ -64,9 +74,10 @@ void testFirmwareInfo( void );
      Variables
 ---------------------------------------------------------------------------------------------*/
 extern SFwInfo	gstruFwInfo;
+extern uint32_t	guFwChanged;
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __FIRMWARE_INFO_H */
+#endif /* __FIRMWARE_H */
