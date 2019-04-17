@@ -1,4 +1,11 @@
-﻿#include "debug.h"
+﻿/*************************************************************  
+ * NOTE : debug.c
+ *      uart-printf
+ * Author : Lee junho
+ * Since : 2019.04.12
+**************************************************************/
+
+#include "debug.h"
 
 PUTCHAR_PROTOTYPE
 {

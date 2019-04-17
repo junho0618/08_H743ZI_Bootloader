@@ -1,4 +1,4 @@
-﻿ /*************************************************************  
+﻿/*************************************************************  
  * NOTE : flash_if.c
  *      Flash Interface
  * Author : Lee junho
@@ -81,10 +81,41 @@ uint32_t writeFlash( uint32_t flashAddress, uint32_t *data, uint32_t dataLength 
 	return FLASH_OK;
 }
 
-uint32_t readByteFlash( uint32_t flashAddress, uint8_t* data, uint16_t dataLength )
+uint32_t writeByteFlash( uint32_t flashAddress, uint8_t *data, uint32_t dataLength )
+{
+	uint32_t	i = 0;
+
+	for( i = 0; ( i < dataLength ) && ( flashAddress <= ( USER_FLASH_LAST_PAGE_ADDRESS - 32 ) ); i += 32 )
+	{
+		/* Device voltage range supposed to be [2.7V to 3.6V], the operation will be done by word */ 
+		if( HAL_FLASH_Program( FLASH_TYPEPROGRAM_FLASHWORD, flashAddress, (uint64_t)((uint32_t)(data + i)) ) == HAL_OK )
+		{   
+			/* Check the written value */
+			if( *(uint32_t*)flashAddress != *(uint32_t*)(data + i) )
+			{   
+				/* Flash content doesn't match SRAM content */
+				jeprintf( "check fail!!!\r\n" );
+				return FLASH_FAIL;
+			}
+			   
+			/* Increment FLASH destination address */
+			flashAddress += 32; 
+		}   
+		else
+		{   
+			jeprintf( "fail write Flash!!!\r\n" );
+			/* Error occurred while writing data in Flash memory */
+			return FLASH_FAIL;
+		}   
+	}
+
+	return FLASH_OK;
+}
+
+uint32_t readByteFlash( uint32_t flashAddress, uint8_t* data, uint32_t dataLength )
 {
 	uint32_t i = 0;
-    
+
     for( i = 0; ( i < dataLength ) && ( flashAddress <= ( USER_FLASH_LAST_PAGE_ADDRESS - 4 ) ); i++ )
     {   
         data[i] = *(uint8_t*)flashAddress;

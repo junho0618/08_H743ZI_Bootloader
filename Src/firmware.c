@@ -1,4 +1,4 @@
-﻿ /*************************************************************  
+﻿/*************************************************************  
  * NOTE : firmware.c
  *      firmware interface
  * Author : Lee junho
@@ -119,7 +119,7 @@ uint32_t initFirmwareInfo( void )
 	jprintf( "Start %s\r\n", __FUNCTION__ );
 	
 	gstruFwInfo.mucInitialized		= FIRMWARE_INITIALIZED;
-	gstruFwInfo.mucUpdated			= 0x01;
+	gstruFwInfo.mucUpdated			= 0x00;
 	memcpy( gstruFwInfo.marrucModelName, MODEL_NAME, MODEL_NAME_SIZE );
 
 	// read serial number	
@@ -141,7 +141,7 @@ uint32_t initFirmwareInfo( void )
 	gstruFwInfo.mstruBlInfo.marrucVersion[3]	= 0x00;
 	
 	gstruFwInfo.mstruBlInfo.mJumpAddress		= FIRMWARE_BOOTLOADER_ADD;
-	gstruFwInfo.mstruBlInfo.mSize				= 128 * 1024;
+	gstruFwInfo.mstruBlInfo.mSize				= 0x20000;								// Max 0x20000( 128K )
 	gstruFwInfo.mstruBlInfo.mCheckSum			= 0x0a0a0a0a;
 	
 	// Main Application Info
@@ -151,8 +151,8 @@ uint32_t initFirmwareInfo( void )
 	gstruFwInfo.mstruMainAppInfo.marrucVersion[3]	= 0x00;
 	
 	gstruFwInfo.mstruMainAppInfo.mJumpAddress		= FIRMWARE_MAINAPP_ADD;
-	gstruFwInfo.mstruMainAppInfo.mSize				= 0x9557;							// 256 * 1024
-	gstruFwInfo.mstruMainAppInfo.mCheckSum			= 0x003cd941;
+	gstruFwInfo.mstruMainAppInfo.mSize				= 0x956c;							// Max 0x40000( 256K )
+	gstruFwInfo.mstruMainAppInfo.mCheckSum			= 0x003ce4f2;
 	
 	// Update Application Info
 	gstruFwInfo.mstruUpdateAppInfo.marrucVersion[0]	= 0x01;
@@ -161,7 +161,7 @@ uint32_t initFirmwareInfo( void )
 	gstruFwInfo.mstruUpdateAppInfo.marrucVersion[3]	= 0x00;
 
 	gstruFwInfo.mstruUpdateAppInfo.mJumpAddress		= FIRMWARE_UPDATEAPP_ADD;
-	gstruFwInfo.mstruUpdateAppInfo.mSize			= 256 * 1024;
+	gstruFwInfo.mstruUpdateAppInfo.mSize			= 0x40000;							// Max 0x40000( 256K )
 	gstruFwInfo.mstruUpdateAppInfo.mCheckSum		= 0x0a0a0a0a;
 	
 	// Backup Application Info
@@ -171,7 +171,7 @@ uint32_t initFirmwareInfo( void )
 	gstruFwInfo.mstruBackupAppInfo.marrucVersion[3]	= 0x00;
 
 	gstruFwInfo.mstruBackupAppInfo.mJumpAddress		= FIRMWARE_BACKUPAPP_ADD;
-	gstruFwInfo.mstruBackupAppInfo.mSize			= 256 * 1024;
+	gstruFwInfo.mstruBackupAppInfo.mSize			= 0x40000;							// Max 0x40000( 256K )
 	gstruFwInfo.mstruBackupAppInfo.mCheckSum		= 0x0a0a0a0a;
 		
 	// Verification Application Info
@@ -181,7 +181,7 @@ uint32_t initFirmwareInfo( void )
 	gstruFwInfo.mstruVeriAppInfo.marrucVersion[3]	= 0x00;
 	
 	gstruFwInfo.mstruVeriAppInfo.mJumpAddress		= FIRMWARE_VERIFICATIONAPP_ADD;
-	gstruFwInfo.mstruVeriAppInfo.mSize				= 256 * 1024;
+	gstruFwInfo.mstruVeriAppInfo.mSize				= 0x40000;							// Max 0x40000( 256K )
 	gstruFwInfo.mstruVeriAppInfo.mCheckSum			= 0x0a0a0a0a;
 	
 	ret = writeFirmwareInfo();
@@ -197,20 +197,17 @@ uint32_t initFirmwareInfo( void )
 uint32_t readFirmwareInfo( void )
 {
 	uint32_t flashAddress;
+	uint32_t ret = 0;
 	
 	jprintf( "Start %s\r\n", __FUNCTION__ );
 	
 	flashAddress = FIRMWARE_INFO_ADD;
 	
-	if( readByteFlash( flashAddress, (uint8_t*)&gstruFwInfo, (uint16_t)sizeof( SFwInfo ) ) )
-	{
-		// occer error
-		return 1;
-	}
-	else
-	{
-		return 0;
-	}
+	ret = readByteFlash( flashAddress, (uint8_t*)&gstruFwInfo, (uint16_t)sizeof( SFwInfo ) );
+	
+//	printFirmwareInfo();
+	
+	return ret;
 }
 
 uint32_t writeFirmwareInfo( void )
@@ -248,13 +245,13 @@ uint32_t checkCS( SAppInfo *appInfo )
 	uint32_t	savedCS			= appInfo->mCheckSum;
 	uint32_t	calcCS			= 0;
 
-	uint8_t		readData = 0;
+	uint8_t		readData		= 0;
 	
 	jprintf( "Start %s\r\n", __FUNCTION__ );
 	
 	while( size )
 	{
-		readByteFlash( flashAddress, &readData, 1 );		// read
+		readByteFlash( flashAddress, &readData, 1 );					// read
 		calcCS += (uint32_t)readData;									// calculate
 		
 		flashAddress += 1;

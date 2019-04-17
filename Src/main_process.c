@@ -1,4 +1,4 @@
-﻿ /*************************************************************  
+﻿/*************************************************************  
  * NOTE : main_process.c
  *      Application Main Process
  * Author : Lee junho
@@ -23,8 +23,8 @@ void MainProcess( void )
 	jprintf( "Start Main Process!!! \r\n" );
 
 	// Check Verification
-#if 0	// H/W 구성 후 재코딩...
-	if( HAL_GPIO_ReadPin( VERIFY_GPIO_Port, VERIFY_Pin ) )
+#if ENABLE_VERIFICATION_APP_JUMP	// H/W 구성 후 재코딩...
+	if( HAL_GPIO_ReadPin( VERIFY_CHECK_GPIO_Port, VERIFY_CHECK_Pin ) )
 	{
 		jiprintf( "Jump to Verification Application!!!\r\n" );
 		jumpToApplication( FIRMWARE_VERIFICATIONAPP_ADD );
@@ -32,16 +32,21 @@ void MainProcess( void )
 #endif
 	
 	// Check IAP
-#if 0	// H/W 구성 후 재코딩...
-	if( HAL_GPIO_ReadPin( IAP_GPIO_Port, IAP_Pin ) )
+#if ENABLE_IAP		// H/W 구성 후 재코딩...
+	if( HAL_GPIO_ReadPin( IAP_CHECK_GPIO_Port, IAP_CHECK_Pin ) )
 	{
-		jiprintf( "Jump to Verification Application!!!\r\n" );
-		// jump IAP Process
+		jiprintf( "Go to IAP Process!!!\r\n" );
+		IAP_Process();
 	}
 #endif
 
 	// Read Firmware Information
-	readFirmwareInfo();
+	ret = readFirmwareInfo();
+	if( ret )
+	{
+		// occur error
+		jeprintf( "Fail read Firmware Information!!!\r\n" );
+	}
 	
 	// Check Firmware Information Initialized
 	if( gstruFwInfo.mucInitialized != FIRMWARE_INITIALIZED )
@@ -59,7 +64,7 @@ void MainProcess( void )
 			guFwChanged	= 1;
 		}
 	}
-	
+
 	// Check Main Application CheckSum
 	do
 	{
@@ -79,7 +84,7 @@ void MainProcess( void )
 			}
 		}
 	} while( ret );
-	
+
 	if( guFwChanged )
 	{
 		writeFirmwareInfo();
@@ -98,7 +103,7 @@ void IAP_Process( void )
 	
 	while( 1 )
 	{
-		;
+		asm( "NOP" );
 	}	
 }
 
@@ -122,8 +127,5 @@ void jumpToApplication( uint32_t address )
 		Jump_To_Application();
 	}
 	
-	while( 1 )
-	{
-		;
-	}	
+	IAP_Process();
 }

@@ -10,8 +10,14 @@ extern "C" {
 /*---------------------------------------------------------------------------------------------
      Defines
 ---------------------------------------------------------------------------------------------*/
-#define	VERIFY_Pin								BTN_USER_Pin
-#define	VERIFY_GPIO_Port						BTN_USER_GPIO_Port
+#define	ENABLE_VERIFICATION_APP_JUMP			1
+#define	ENABLE_IAP								1
+
+#define	VERIFY_CHECK_Pin						BTN_USER_Pin
+#define	VERIFY_CHECK_GPIO_Port					BTN_USER_GPIO_Port
+
+#define	IAP_CHECK_Pin							BTN_USER_Pin
+#define	IAP_CHECK_GPIO_Port						BTN_USER_GPIO_Port
 
 /*---------------------------------------------------------------------------------------------
      Functions
