@@ -8,33 +8,21 @@
 #include "main.h"
 #include "flash_if.h"
 
-void initFlash( void )
-{
-	HAL_FLASH_Unlock();
-	
-	__HAL_FLASH_CLEAR_FLAG( FLASH_IT_ALL_BANK1 );
-	__HAL_FLASH_CLEAR_FLAG( FLASH_IT_ALL_BANK2 );
-}
-
-void deinitFlash( void )
-{
-	HAL_FLASH_Lock();
-}
-
-uint32_t eraseFlash( uint32_t address )
+uint32_t eraseFlash( uint32_t address, uint32_t nbSecores )
 {
 	FLASH_EraseInitTypeDef	EraseInitStruct;
 	uint32_t	SectorError;
+	
+	jprintf( "Start %s : 0x%08x\r\n", __FUNCTION__, address );
 	
 	/* Fill EraseInit structure*/
 	EraseInitStruct.TypeErase		= FLASH_TYPEERASE_SECTORS;
 	EraseInitStruct.VoltageRange	= FLASH_VOLTAGE_RANGE_3;
 	EraseInitStruct.Banks			= getBank( address );
 	EraseInitStruct.Sector			= getSector( address );
-	EraseInitStruct.NbSectors		= 1;
+	EraseInitStruct.NbSectors		= nbSecores;
     if( HAL_FLASHEx_Erase( &EraseInitStruct, &SectorError ) != HAL_OK )  
     {
-    	HAL_FLASH_Lock();	  
 		return FLASH_FAIL;  
     }     
 
@@ -130,48 +118,43 @@ uint32_t readByteFlash( uint32_t flashAddress, uint8_t* data, uint32_t dataLengt
 
 uint32_t copyFlash( uint32_t srcAddress, uint32_t destAddress, uint32_t dataLength )
 {
-	uint32_t	flashWord;
+	uint32_t	i, j;
+	uint64_t	data[4];
 	
-	// erase destination sector
-	eraseFlash( destAddress );
+	jprintf( "Start %s, source : 0x%08x, target : 0x%08x, size : %d\r\n", __FUNCTION__, srcAddress, destAddress, dataLength );
 	
-	// read data from source & write data to destination 
-	while( dataLength > 0 )
+	// write & verify data
+	for( i = 0; ( i < dataLength ) && ( destAddress <= ( USER_FLASH_LAST_PAGE_ADDRESS - 8 ) ); i += 8 )
 	{
-		jprintf( "." );
-		
-		if( readByteFlash( srcAddress, (uint8_t*)&flashWord, 4 ) )
+		/* read source address data */
+		for( j = 0; j < 4; j++  )
 		{
-			return FLASH_FAIL;
+			data[j] = *(uint64_t*)( srcAddress + ( j * 8 ) );
 		}
-
-		if( writeFlash( destAddress, &flashWord, 1 ) )
-		{
-			return FLASH_FAIL;
-		}		
 		
-		srcAddress	+= 32;
-		destAddress	+= 32;
+		jprintf( "." );
 
-		if( dataLength >= 32 )
-		{
-			dataLength -= 32;
+		/* Device voltage range supposed to be [2.7V to 3.6V], the operation will be done by word */ 
+		if( HAL_FLASH_Program( FLASH_TYPEPROGRAM_FLASHWORD, destAddress, (uint64_t)(uint32_t)data ) == HAL_OK )
+		{   
+			/* Check the written value */
+			if( *(uint64_t*)destAddress != *(uint64_t*)srcAddress )
+			{
+				jeprintf( "fail verify data\r\n" );
+				return FLASH_FAIL;
+			}
+			
+			/* Increment FLASH destination address */
+			destAddress	+= 32;
+			srcAddress	+= 32;
 		}
 		else
 		{
-			if( readByteFlash( srcAddress, (uint8_t*)&flashWord, dataLength ) )
-			{
-				return FLASH_FAIL;
-			}
-
-			if( writeFlash( destAddress, &flashWord, 1 ) )
-			{
-				return FLASH_FAIL;
-			}	
-			
-			break;
-		}			
-	}
+			jeprintf( "fail write Flash!!!\r\n" );
+			/* Error occurred while writing data in Flash memory */
+			return FLASH_FAIL;
+		}
+	} 
 	
 	jprintf( "\r\n" );
 	

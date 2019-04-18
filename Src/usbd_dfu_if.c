@@ -23,6 +23,7 @@
 
 /* USER CODE BEGIN INCLUDE */
 #include "flash_if.h"
+#include "firmware.h"
 #include "debug.h"
 /* USER CODE END INCLUDE */
 
@@ -156,7 +157,7 @@ __ALIGN_BEGIN USBD_DFU_MediaTypeDef USBD_DFU_fops_FS __ALIGN_END =
 uint16_t MEM_If_Init_FS(void)
 {
   /* USER CODE BEGIN 0 */
-	initFlash();  
+	HAL_FLASH_Unlock(); 
 
 	return (USBD_OK);
   /* USER CODE END 0 */
@@ -169,7 +170,7 @@ uint16_t MEM_If_Init_FS(void)
 uint16_t MEM_If_DeInit_FS(void)
 {
   /* USER CODE BEGIN 1 */
-	deinitFlash();
+	HAL_FLASH_Lock();
 
 	return (USBD_OK);
   /* USER CODE END 1 */
@@ -185,7 +186,7 @@ uint16_t MEM_If_Erase_FS(uint32_t Add)
   /* USER CODE BEGIN 2 */
 //	jeprintf( "=====> 0x%08x\r\n", Add );
 
-	eraseFlash( Add );
+	eraseFlash( Add, APPLICATION_SECTOR_COUNT );
 
 	return (USBD_OK);
   /* USER CODE END 2 */

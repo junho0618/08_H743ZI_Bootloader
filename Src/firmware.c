@@ -8,7 +8,7 @@
 #include "flash_if.h"
 
 SFwInfo		gstruFwInfo;
-uint32_t	guFwChanged = 0;
+uint32_t	guFwInfoChanged = 0;
 
 /*---------------------------------------------------------------------------------------------
      Firmware Information
@@ -33,6 +33,7 @@ void printFirmwareInfo( void )
 	jiprintf( "===   Print Firmware Info   ======================\r\n" );
 	jiprintf( "==================================================\r\n" );
 	jprintf( "mucUpdated : 0x%02x\r\n", gstruFwInfo.mucUpdated );
+	jprintf( "mucBootMode : 0x%02x\r\n", gstruFwInfo.mucBootMode );
 		
 	// Model Name
 	jprintf( "Model Name : %s\r\n", gstruFwInfo.marrucModelName );
@@ -118,6 +119,7 @@ uint32_t initFirmwareInfo( void )
 	
 	jprintf( "Start %s\r\n", __FUNCTION__ );
 	
+	gstruFwInfo.mucBootMode			= BOOT_NORMAL;
 	gstruFwInfo.mucInitialized		= FIRMWARE_INITIALIZED;
 	gstruFwInfo.mucUpdated			= 0x00;
 	memcpy( gstruFwInfo.marrucModelName, MODEL_NAME, MODEL_NAME_SIZE );
@@ -219,9 +221,9 @@ uint32_t writeFirmwareInfo( void )
 	
 	flashAddress = FIRMWARE_INFO_ADD;
 	
-	initFlash();
+	HAL_FLASH_Unlock();
 	
-	eraseFlash( flashAddress );
+	eraseFlash( flashAddress, 1 );
 	
 	ret = writeFlash( flashAddress, (uint32_t*)&gstruFwInfo, (uint16_t)sizeof( SFwInfo ) / 4 );
 	if( ret )		
@@ -229,7 +231,7 @@ uint32_t writeFirmwareInfo( void )
 		jeprintf( "Fail write firmware information!!!\r\n" );
 	}
 	
-	deinitFlash();
+	HAL_FLASH_Lock();
 	
 	return ret;
 }
@@ -239,22 +241,22 @@ uint32_t writeFirmwareInfo( void )
 ---------------------------------------------------------------------------------------------*/
 uint32_t checkCS( SAppInfo *appInfo )
 {
-	uint32_t	flashAddress	= appInfo->mJumpAddress;
-	uint32_t	size			= appInfo->mSize;
+	uint32_t	flashAdd	= appInfo->mJumpAddress;
+	uint32_t	size		= appInfo->mSize;
 	
-	uint32_t	savedCS			= appInfo->mCheckSum;
-	uint32_t	calcCS			= 0;
+	uint32_t	savedCS		= appInfo->mCheckSum;
+	uint32_t	calcCS		= 0;
 
-	uint8_t		readData		= 0;
+	uint8_t		readData	= 0;
 	
-	jprintf( "Start %s\r\n", __FUNCTION__ );
+	jprintf( "Start %s, target : 0x%08x\r\n", __FUNCTION__, flashAdd );
 	
 	while( size )
 	{
-		readByteFlash( flashAddress, &readData, 1 );					// read
+		readByteFlash( flashAdd, &readData, 1 );					// read
 		calcCS += (uint32_t)readData;									// calculate
 		
-		flashAddress += 1;
+		flashAdd += 1;
 		size--;		
 	}	
 	
@@ -263,33 +265,37 @@ uint32_t checkCS( SAppInfo *appInfo )
 	return ( savedCS == calcCS ? 0 : 1 );
 }
 
-uint32_t updateMainApp( void )
+uint32_t copyApplication( SAppInfo *source, SAppInfo *target )
 {
-	uint32_t sourceFlashAddress;
-	uint32_t destinationFlashAddress;
-	uint32_t size;
 	uint32_t ret = 0;
 	
 	jprintf( "Start %s\r\n", __FUNCTION__ );
-
-	// set source, destination, size
-//	sourceFlashAddress		= gstruFwInfo.mstruUpdateAppInfo.mJumpAddress;
-//	destinationFlashAddress	= gstruFwInfo.mstruMainAppInfo.mJumpAddress;
-//	size					= gstruFwInfo.mstruUpdateAppInfo.mSize;
 	
-	sourceFlashAddress		= 0x080E0000;
-	destinationFlashAddress	= 0x08140000;
-	size					= 128*1024;
-
-	initFlash();
+	HAL_FLASH_Unlock();
 	
-	ret = copyFlash( sourceFlashAddress, destinationFlashAddress, size );
+	// erase destination sector
+	ret = eraseFlash( target->mJumpAddress, APPLICATION_SECTOR_COUNT );	
 	if( ret )
 	{
-		jeprintf( "Fail update main application!!!\r\n" );		
+		jeprintf( "fail eraseFlash!!!\r\n" );
+		goto error_copy;
 	}
 	
-	deinitFlash();
+	ret = copyFlash( source->mJumpAddress, target->mJumpAddress, source->mSize );
+	if( ret )
+	{
+		jeprintf( "Fail copy to backup!!!\r\n" );		
+	}
+	else
+	{	
+		memcpy( target->marrucVersion, source->marrucVersion, VERSION_SIZE );		// Application Version
+		target->mSize		= source->mSize;
+		target->mCheckSum	= source->mCheckSum;
+		ret = checkCS( target );
+	}
+	
+error_copy :
+	HAL_FLASH_Lock();
 	
 	return ret;
 }
@@ -307,10 +313,10 @@ void testFirmwareInfo( void )
 	if( ret )
 	{
 		jeprintf( "Fail Read Firmware Infomation!!!\r\n" );
-		// 후처리
+		goto test_fail;
 	}
 	
-	printFirmwareInfo();
+	printFirmwareInfo();														// Flash에 저장된 Firmware Information
 	
 	// 3. Write FirmwareInfo	
 	gstruFwInfo.mucUpdated			= 0x01;
@@ -383,7 +389,7 @@ void testFirmwareInfo( void )
 	if( ret )
 	{
 		jeprintf( "Fail Write Firmware Infomation!!!\r\n" );
-		// 후처리
+		goto test_fail;
 	}
 		
 	// 4. FirmwareInfo Variable set 0
@@ -394,9 +400,15 @@ void testFirmwareInfo( void )
 	if( ret )
 	{
 		jeprintf( "Fail Read Firmware Infomation!!!\r\n" );
-		// 후처리
+		goto test_fail;
 	}
 	
 	printFirmwareInfo();	
+	
+test_fail:
+	while( 1 )
+	{
+		asm( "NOP" );
+	}
 }
 #endif // TEST_FIRMWARE_INFO

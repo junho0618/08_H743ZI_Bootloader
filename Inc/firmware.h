@@ -8,17 +8,22 @@ extern "C" {
 #include "main.h"
 
 /*---------------------------------------------------------------------------------------------
+     For debuging
+---------------------------------------------------------------------------------------------*/
+#define	TEST_FIRMWARE_INFO							0
+
+/*---------------------------------------------------------------------------------------------
      Defines
 ---------------------------------------------------------------------------------------------*/
 #define FIRMWARE_INITIALIZED						0xAA
+#define APPLICATION_SECTOR_COUNT					3
 
 #define FIRMWARE_BOOTLOADER_ADD						((uint32_t)0x08000000)
 #define FIRMWARE_MAINAPP_ADD						((uint32_t)0x08020000)
-#define FIRMWARE_UPDATEAPP_ADD						((uint32_t)0x08060000)
-#define FIRMWARE_BACKUPAPP_ADD						((uint32_t)0x080A0000)
-#define FIRMWARE_VERIFICATIONAPP_ADD				((uint32_t)0x08100000)
+#define FIRMWARE_UPDATEAPP_ADD						((uint32_t)0x08100000)
+#define FIRMWARE_BACKUPAPP_ADD						((uint32_t)0x08080000)
+#define FIRMWARE_VERIFICATIONAPP_ADD				((uint32_t)0x08160000)
 #define FIRMWARE_INFO_ADD							((uint32_t)0x080E0000)
-
 #define SERIAL_NUMBER_ADD							((uint32_t)0x081E0000)
 
 #define	VERSION_SIZE								4
@@ -26,11 +31,17 @@ extern "C" {
 #define	MODEL_NAME_SIZE								sizeof( MODEL_NAME )
 #define	SERIAL_NUMBER_SIZE							12
 
-#define	TEST_FIRMWARE_INFO							1
-
 /*---------------------------------------------------------------------------------------------
      Typedefs
 ---------------------------------------------------------------------------------------------*/
+enum BOOTMODE
+{
+	BOOT_NORMAL	,
+	BOOT_VERIFY	,
+	BOOT_UPDATE	,
+	BOOT_IAP
+};	
+
 struct _SAppInfo
 {
 	uint8_t		marrucVersion[VERSION_SIZE];				// Application Version
@@ -43,9 +54,11 @@ typedef struct _SAppInfo SAppInfo;
 struct _SFwInfo
 {
 	uint8_t		mucInitialized;								// Firmware Info initialied( aa:initialized )
-	uint8_t		mucUpdated;									// update 진행 유무
+	uint8_t		mucBootMode;								// Booting mode 0: Normal 1: Verify 2: Update 3: IAP
+	uint8_t		mucUpdated;									// update 성공 유무
 	uint8_t		marrucModelName[MODEL_NAME_SIZE];			// Model Name
 	uint8_t		marrucSerialNo[SERIAL_NUMBER_SIZE];			// Serial Number
+	
 	SAppInfo	mstruBlInfo;								// Bootloader Info
 	SAppInfo	mstruMainAppInfo;							// Main Application Info
 	SAppInfo	mstruUpdateAppInfo;							// Update Application Info
@@ -64,17 +77,17 @@ uint32_t	readFirmwareInfo( void );
 uint32_t	writeFirmwareInfo( void );
 
 uint32_t	checkCS( SAppInfo *appInfo );
-uint32_t	updateMainApp( void );
+uint32_t	copyApplication( SAppInfo *source, SAppInfo *target );
 
 #if ( TEST_FIRMWARE_INFO )
-void testFirmwareInfo( void );
+void		testFirmwareInfo( void );
 #endif	// TEST_FIRMWARE_INFO
 
 /*---------------------------------------------------------------------------------------------
      Variables
 ---------------------------------------------------------------------------------------------*/
 extern SFwInfo	gstruFwInfo;
-extern uint32_t	guFwChanged;
+extern uint32_t	guFwInfoChanged;
 
 #ifdef __cplusplus
 }

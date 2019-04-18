@@ -94,7 +94,7 @@ int main(void)
   
   /* USER CODE BEGIN 2 */
   
-	jprintf( "Start Bootloader...(%s)\r\n", __DATE__ );
+	jprintf( "\r\n\nStart Bootloader...(%s)\r\n", __DATE__ );
 	
 	MainProcess();
   /* USER CODE END 2 */

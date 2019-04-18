@@ -27,9 +27,7 @@ extern "C" {
 /*---------------------------------------------------------------------------------------------
      Functions
 ---------------------------------------------------------------------------------------------*/
-void		initFlash( void );
-void		deinitFlash( void );
-uint32_t	eraseFlash( uint32_t Addr );
+uint32_t	eraseFlash( uint32_t Addr, uint32_t nbSecores );
 uint32_t	writeFlash( uint32_t flashAddress, uint32_t *data, uint32_t dataLength );
 uint32_t	writeByteFlash( uint32_t flashAddress, uint8_t *data, uint32_t dataLength );
 uint32_t	readByteFlash( uint32_t flashAddress, uint8_t* data, uint32_t dataLength );
