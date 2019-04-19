@@ -104,7 +104,7 @@ uint32_t readByteFlash( uint32_t flashAddress, uint8_t* data, uint32_t dataLengt
 {
 	uint32_t i = 0;
 
-    for( i = 0; ( i < dataLength ) && ( flashAddress <= ( USER_FLASH_LAST_PAGE_ADDRESS - 4 ) ); i++ )
+    for( i = 0; ( i < dataLength ) && ( flashAddress <= ( USER_FLASH_LAST_PAGE_ADDRESS - 1 ) ); i++ )
     {   
         data[i] = *(uint8_t*)flashAddress;
         
@@ -124,7 +124,7 @@ uint32_t copyFlash( uint32_t srcAddress, uint32_t destAddress, uint32_t dataLeng
 	jprintf( "Start %s, source : 0x%08x, target : 0x%08x, size : %d\r\n", __FUNCTION__, srcAddress, destAddress, dataLength );
 	
 	// write & verify data
-	for( i = 0; ( i < dataLength ) && ( destAddress <= ( USER_FLASH_LAST_PAGE_ADDRESS - 8 ) ); i += 8 )
+	for( i = 0; ( i < dataLength ) && ( destAddress <= ( USER_FLASH_LAST_PAGE_ADDRESS - 32 ) ); i += 32 )
 	{
 		/* read source address data */
 		for( j = 0; j < 4; j++  )

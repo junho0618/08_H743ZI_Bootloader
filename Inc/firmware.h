@@ -16,7 +16,9 @@ extern "C" {
      Defines
 ---------------------------------------------------------------------------------------------*/
 #define FIRMWARE_INITIALIZED						0xAA
-#define APPLICATION_SECTOR_COUNT					3
+#define APPLICATION_SECTOR_COUNT					3								// Application sector count : 1 sector = 128K
+#define	FIRMWARE_RETRY_COUNT						3								// Firmware function retry count
+#define	FIRMWARE_RETRY_DELAY						10								// Firmware function retry delay(ms)
 
 #define FIRMWARE_BOOTLOADER_ADD						((uint32_t)0x08000000)
 #define FIRMWARE_MAINAPP_ADD						((uint32_t)0x08020000)
@@ -36,11 +38,17 @@ extern "C" {
 ---------------------------------------------------------------------------------------------*/
 enum BOOTMODE
 {
-	BOOT_NORMAL	,
-	BOOT_VERIFY	,
-	BOOT_UPDATE	,
-	BOOT_IAP
-};	
+	BOOT_NORMAL	= 0,
+	BOOT_VERIFY = 1,
+	BOOT_UPDATE	= 2,
+	BOOT_IAP	= 3
+};
+
+enum FIRMWARE_FLAG
+{
+	FLAG_NG	= 0,
+	FLAG_OK	= 1
+};
 
 struct _SAppInfo
 {
@@ -53,12 +61,17 @@ typedef struct _SAppInfo SAppInfo;
 
 struct _SFwInfo
 {
+	// flag
 	uint8_t		mucInitialized;								// Firmware Info initialied( aa:initialized )
 	uint8_t		mucBootMode;								// Booting mode 0: Normal 1: Verify 2: Update 3: IAP
 	uint8_t		mucUpdated;									// update 성공 유무
+	uint8_t		mucBackuped;								// backup 성공 유무
+
+	// Model Info
 	uint8_t		marrucModelName[MODEL_NAME_SIZE];			// Model Name
 	uint8_t		marrucSerialNo[SERIAL_NUMBER_SIZE];			// Serial Number
 	
+	// Application Info
 	SAppInfo	mstruBlInfo;								// Bootloader Info
 	SAppInfo	mstruMainAppInfo;							// Main Application Info
 	SAppInfo	mstruUpdateAppInfo;							// Update Application Info
@@ -73,8 +86,8 @@ typedef struct _SFwInfo SFwInfo;
 void		printSerialNumber( void );
 void		printFirmwareInfo( void );
 uint32_t	initFirmwareInfo( void );
-uint32_t	readFirmwareInfo( void );
-uint32_t	writeFirmwareInfo( void );
+uint32_t	loadFirmwareInfo( void );
+uint32_t	saveFirmwareInfo( void );
 
 uint32_t	checkCS( SAppInfo *appInfo );
 uint32_t	copyApplication( SAppInfo *source, SAppInfo *target );

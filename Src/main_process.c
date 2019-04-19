@@ -11,6 +11,8 @@
 #include "usb_device.h"
 
 void IAP_Process( void );
+void goNormalBooting( void );
+void goUpdateBooting( void );
 void jumpToApplication( uint32_t address );
 
 pFunction	Jump_To_Application;
@@ -47,73 +49,50 @@ void MainProcess( void )
 	testFirmwareInfo();	
 #endif // TEST_FIRMWARE_INFO	
 
-	// Read Firmware Information
-	ret = readFirmwareInfo();
+	// Load Firmware Information
+	ret = loadFirmwareInfo();
 	if( ret )
 	{
-		jeprintf( "Fail read Firmware Information!!!\r\n" );
+		jeprintf( "Fail load firmware information!!!\r\n" );
 	}
 	
 	// Check Firmware Information Initialized
 	if( gstruFwInfo.mucInitialized != FIRMWARE_INITIALIZED )
 	{		
 		initFirmwareInfo();
-	}	
-	
-	// Check firmware updated
-	if( gstruFwInfo.mucUpdated )
-	{	
-		// update => main	
-		ret = copyApplication( &gstruFwInfo.mstruUpdateAppInfo, &gstruFwInfo.mstruMainAppInfo );
-		if( ret )							// update Fail
-		{	
-			jeprintf( "Fail update Application!!!\r\n" );
-		}
-		else
+		
+		// main => backup
+		ret = copyApplication( &gstruFwInfo.mstruBackupAppInfo, &gstruFwInfo.mstruMainAppInfo );
+		if( ret )	// Fail
 		{
-			guFwInfoChanged	= 1;
+			jeprintf( "Fail Backup Application!!!\r\n" );
+			gstruFwInfo.mucBackuped = 0;
 		}
+		
+		gstruFwInfo.mucBackuped = 1;
 	}
-
-	// Check Main Application CheckSum
-	do
-	{
-		ret = checkCS( &gstruFwInfo.mstruMainAppInfo );					// main app check CS
-		if( ret )
-		{
-			// Main Application CheckSum Fail
-			if( checkCS( &gstruFwInfo.mstruBackupAppInfo ) )			// backup app check CS
-			{
-				// Backup Application CheckSum Fail
-				// jump IAP Process
-				IAP_Process();
-			}
-			else
-			{
-				// backup => main
-				copyApplication( &gstruFwInfo.mstruBackupAppInfo, &gstruFwInfo.mstruMainAppInfo );
-				guFwInfoChanged	= 1;
-			}
-		}
-		else
-		{
-			if( gstruFwInfo.mucUpdated == 0x01 )
-			{
-				// main => backup
-				copyApplication( &gstruFwInfo.mstruMainAppInfo, &gstruFwInfo.mstruBackupAppInfo );
-				
-				gstruFwInfo.mucUpdated = 0x00;
-				guFwInfoChanged	= 1;
-			}
-		}
-	} while( ret );
-
-	if( guFwInfoChanged )				// Firmware Information 변경시 저장
-	{
-		writeFirmwareInfo();
-	}	
 	
-	jumpToApplication( gstruFwInfo.mstruMainAppInfo.mJumpAddress );
+	// Check Booting Mode
+	switch( gstruFwInfo.mucBootMode )
+	{
+		case BOOT_NORMAL	:
+			goNormalBooting();
+			break;
+
+		case BOOT_VERIFY	:
+			jiprintf( "Jump to Verification Application!!!\r\n" );
+			jumpToApplication( FIRMWARE_VERIFICATIONAPP_ADD );
+			break;
+
+		case BOOT_UPDATE	:
+			goUpdateBooting();
+			break;
+
+		case BOOT_IAP		:
+		default				:
+			IAP_Process();
+			break;
+	}	
 }
 
 void IAP_Process( void )
@@ -126,6 +105,83 @@ void IAP_Process( void )
 	{
 		asm( "NOP" );
 	}
+}
+
+void goNormalBooting( void )
+{
+	uint32_t ret = 0;
+
+	jiprintf( "Start Normal Booting..\r\n" );
+	
+	ret = checkCS( &gstruFwInfo.mstruMainAppInfo );					// main app check CS
+	if( ret ) // Fail
+	{
+		if( gstruFwInfo.mucBackuped )								// backup app 유무 체크
+		{
+			ret = checkCS( &gstruFwInfo.mstruBackupAppInfo );			// backup app check CS
+			if( ret )  // Fail
+			{
+				IAP_Process();
+			}
+			else
+			{
+				// backup => main
+				ret = copyApplication( &gstruFwInfo.mstruBackupAppInfo, &gstruFwInfo.mstruMainAppInfo );
+				if( ret )	// Fail
+				{
+					jeprintf( "Fail Backup Application!!!\r\n" );
+					// jump IAP Process
+					IAP_Process();
+				}
+
+				saveFirmwareInfo();
+			}
+		}
+		else
+		{
+			IAP_Process();
+		}
+	}
+	
+	// Jump Main Application
+	jumpToApplication( gstruFwInfo.mstruMainAppInfo.mJumpAddress );
+}
+
+void goUpdateBooting( void )
+{
+	uint32_t ret = 0;
+	
+	jiprintf( "Start Update Booting..\r\n" );
+	
+	gstruFwInfo.mucUpdated = 0x00;
+	
+	// update => main	
+	jprintf( "Start Update Application!!!\r\n" );
+	ret = copyApplication( &gstruFwInfo.mstruUpdateAppInfo, &gstruFwInfo.mstruMainAppInfo );
+	if( ret )
+	{	
+		jeprintf( "Fail update!!!\r\n" );
+		goto errorUpdate;
+	}
+	
+	// main => backup
+	jprintf( "Start Backup Application!!!\r\n" );
+	ret = copyApplication( &gstruFwInfo.mstruMainAppInfo, &gstruFwInfo.mstruBackupAppInfo );
+	if( ret )
+	{	
+		jeprintf( "Fail backup!!!\r\n" );
+		gstruFwInfo.mucBackuped = 0;
+		goto errorUpdate;
+	}
+	
+	gstruFwInfo.mucBackuped	= 0x01;			
+	gstruFwInfo.mucUpdated	= 0x01;
+
+	saveFirmwareInfo();
+	
+errorUpdate :		
+	// Jump Main Application
+	jumpToApplication( gstruFwInfo.mstruMainAppInfo.mJumpAddress );
 }
 
 void jumpToApplication( uint32_t address )

@@ -1,6 +1,8 @@
 ﻿/*************************************************************  
  * NOTE : firmware.c
  *      firmware interface
+ *		firmware function retry count : FIRMWARE_RETRY_COUNT
+ *		firmware function retry delay : FIRMWARE_RETRY_DELAY
  * Author : Lee junho
  * Since : 2019.04.12
 **************************************************************/
@@ -186,49 +188,66 @@ uint32_t initFirmwareInfo( void )
 	gstruFwInfo.mstruVeriAppInfo.mSize				= 0x40000;							// Max 0x40000( 256K )
 	gstruFwInfo.mstruVeriAppInfo.mCheckSum			= 0x0a0a0a0a;
 	
-	ret = writeFirmwareInfo();
+	ret = saveFirmwareInfo();
 	if( ret )
 	{
-		jeprintf( "Fail Write Firmware Infomation!!!\r\n" );
+		jeprintf( "Fail Save Firmware Infomation!!!\r\n" );
 		return 1;
 	}
 	
 	return 0;
 }
 
-uint32_t readFirmwareInfo( void )
+uint32_t loadFirmwareInfo( void )
 {
-	uint32_t flashAddress;
-	uint32_t ret = 0;
+	uint32_t flashAdd	= FIRMWARE_INFO_ADD;	
+	uint32_t count		= FIRMWARE_RETRY_COUNT;
+	uint32_t ret		= 0;
 	
-	jprintf( "Start %s\r\n", __FUNCTION__ );
+//	jprintf( "Start %s\r\n", __FUNCTION__ );
 	
-	flashAddress = FIRMWARE_INFO_ADD;
+	while( count-- )
+	{
+		ret = readByteFlash( flashAdd, (uint8_t*)&gstruFwInfo, (uint16_t)sizeof( SFwInfo ) );
+		if( ret )
+		{
+			jeprintf( "fail read firmware info(%d)!!!\r\n", count );
+			HAL_Delay( FIRMWARE_RETRY_DELAY );				// 10ms delay
+		}
+		else
+		{
+//			printFirmwareInfo();
+			return 0;
+		}
+	}
 	
-	ret = readByteFlash( flashAddress, (uint8_t*)&gstruFwInfo, (uint16_t)sizeof( SFwInfo ) );
-	
-//	printFirmwareInfo();
-	
-	return ret;
+	return 1;
 }
 
-uint32_t writeFirmwareInfo( void )
+uint32_t saveFirmwareInfo( void )
 {	
-	uint32_t flashAddress;
-	uint32_t ret = 0;
+	uint32_t flashAdd	= FIRMWARE_INFO_ADD;
+	uint32_t count		= FIRMWARE_RETRY_COUNT;
+	uint32_t ret		= 0;
 	
-	jprintf( "Start %s\r\n", __FUNCTION__ );
-	
-	flashAddress = FIRMWARE_INFO_ADD;
+//	jprintf( "Start %s\r\n", __FUNCTION__ );
 	
 	HAL_FLASH_Unlock();
-	
-	eraseFlash( flashAddress, 1 );
-	
-	ret = writeFlash( flashAddress, (uint32_t*)&gstruFwInfo, (uint16_t)sizeof( SFwInfo ) / 4 );
-	if( ret )		
-	{		
-		jeprintf( "Fail write firmware information!!!\r\n" );
+
+	while( count-- )
+	{	
+		eraseFlash( flashAdd, 1 );
+		
+		ret = writeFlash( flashAdd, (uint32_t*)&gstruFwInfo, (uint16_t)sizeof( SFwInfo ) / 4 );
+		if( ret )		
+		{		
+			jeprintf( "Fail save firmware information(%d)!!!\r\n", count );
+			HAL_Delay( FIRMWARE_RETRY_DELAY );				// 10ms delay
+		}
+		else
+		{
+			break;
+		}
 	}
 	
 	HAL_FLASH_Lock();
@@ -241,63 +260,85 @@ uint32_t writeFirmwareInfo( void )
 ---------------------------------------------------------------------------------------------*/
 uint32_t checkCS( SAppInfo *appInfo )
 {
-	uint32_t	flashAdd	= appInfo->mJumpAddress;
-	uint32_t	size		= appInfo->mSize;
-	
-	uint32_t	savedCS		= appInfo->mCheckSum;
-	uint32_t	calcCS		= 0;
+	uint32_t flashAdd	= appInfo->mJumpAddress;
+	uint32_t calcCS		= 0;
 
-	uint8_t		readData	= 0;
+	uint32_t count		= FIRMWARE_RETRY_COUNT;
+	uint32_t i;
+
+//	jprintf( "Start %s, target : 0x%08x\r\n", __FUNCTION__, flashAdd );
 	
-	jprintf( "Start %s, target : 0x%08x\r\n", __FUNCTION__, flashAdd );
-	
-	while( size )
+	while( count-- )
 	{
-		readByteFlash( flashAdd, &readData, 1 );					// read
-		calcCS += (uint32_t)readData;									// calculate
+		for( i = 0; ( i < appInfo->mSize ) && ( flashAdd <= ( USER_FLASH_LAST_PAGE_ADDRESS - 1 ) ); i++ )
+		{
+			calcCS += (uint64_t)( *(uint8_t*)(flashAdd + i) );						// read & calculate
+//			flashAdd += 1;
+		}
 		
-		flashAdd += 1;
-		size--;		
-	}	
-	
-	jiprintf( "calcCS : 0x%08x, savedCS : 0x%08x \r\n", calcCS, savedCS );
-	
-	return ( savedCS == calcCS ? 0 : 1 );
+		if( appInfo->mCheckSum == calcCS )
+		{
+			return 0;
+		}
+		else
+		{
+			jeprintf( "calcCS : 0x%08x, savedCS : 0x%08x(%d) \r\n", calcCS, appInfo->mCheckSum, count );
+			HAL_Delay( FIRMWARE_RETRY_DELAY );
+		}					
+	}
+
+	return 1;
 }
 
 uint32_t copyApplication( SAppInfo *source, SAppInfo *target )
 {
-	uint32_t ret = 0;
+	uint32_t count		= FIRMWARE_RETRY_COUNT;
+	uint32_t ret		= 0;
 	
-	jprintf( "Start %s\r\n", __FUNCTION__ );
+//	jprintf( "Start %s\r\n", __FUNCTION__ );
 	
 	HAL_FLASH_Unlock();
 	
-	// erase destination sector
-	ret = eraseFlash( target->mJumpAddress, APPLICATION_SECTOR_COUNT );	
-	if( ret )
+	while( count-- )
 	{
-		jeprintf( "fail eraseFlash!!!\r\n" );
-		goto error_copy;
+		// erase destination sector
+		ret = eraseFlash( target->mJumpAddress, APPLICATION_SECTOR_COUNT );	
+		if( ret )
+		{
+			jeprintf( "fail eraseFlash(%d)!!!\r\n", count );
+			HAL_Delay( FIRMWARE_RETRY_DELAY );
+			continue;
+		}
+		
+		ret = copyFlash( source->mJumpAddress, target->mJumpAddress, source->mSize );
+		if( ret )
+		{
+			jeprintf( "Fail copy flash(%d)!!!\r\n", count );
+			HAL_Delay( FIRMWARE_RETRY_DELAY );
+		}
+		else
+		{	
+			memcpy( target->marrucVersion, source->marrucVersion, VERSION_SIZE );		// Application Version
+			target->mSize		= source->mSize;
+			target->mCheckSum	= source->mCheckSum;
+			
+			ret = checkCS( target );
+			if( ret )
+			{
+				jeprintf( "Fail CheckSum(%d)!!!\r\n", count );
+				HAL_Delay( FIRMWARE_RETRY_DELAY );
+			}
+			else
+			{
+				jiprintf( "Success copy application!!!\r\n" );
+				HAL_FLASH_Lock();
+				
+				return 0;
+			}
+		}
 	}
-	
-	ret = copyFlash( source->mJumpAddress, target->mJumpAddress, source->mSize );
-	if( ret )
-	{
-		jeprintf( "Fail copy to backup!!!\r\n" );		
-	}
-	else
-	{	
-		memcpy( target->marrucVersion, source->marrucVersion, VERSION_SIZE );		// Application Version
-		target->mSize		= source->mSize;
-		target->mCheckSum	= source->mCheckSum;
-		ret = checkCS( target );
-	}
-	
-error_copy :
-	HAL_FLASH_Lock();
-	
-	return ret;
+		
+	return 1;
 }
 
 #if ( TEST_FIRMWARE_INFO )
@@ -308,11 +349,11 @@ void testFirmwareInfo( void )
 	// 1. Print Variable
 	printFirmwareInfo();
 	
-	// 2. Print Read FirmwareInfo
-	ret = readFirmwareInfo();
+	// 2. Print Load FirmwareInfo
+	ret = loadFirmwareInfo();
 	if( ret )
 	{
-		jeprintf( "Fail Read Firmware Infomation!!!\r\n" );
+		jeprintf( "Fail Load Firmware Infomation!!!\r\n" );
 		goto test_fail;
 	}
 	
@@ -385,21 +426,21 @@ void testFirmwareInfo( void )
 	gstruFwInfo.mstruVeriAppInfo.mSize				= 0x12345678;
 	gstruFwInfo.mstruVeriAppInfo.mCheckSum			= 0x0a0a0a0a;
 	
-	ret = writeFirmwareInfo();
+	ret = saveFirmwareInfo();
 	if( ret )
 	{
-		jeprintf( "Fail Write Firmware Infomation!!!\r\n" );
+		jeprintf( "Fail Save Firmware Infomation!!!\r\n" );
 		goto test_fail;
 	}
 		
 	// 4. FirmwareInfo Variable set 0
 	memset( &gstruFwInfo, 0x00, sizeof( SFwInfo ) );
 
-	// 5. Read FirewareInfo & Print
-	ret = readFirmwareInfo();
+	// 5. Load FirewareInfo & Print
+	ret = loadFirmwareInfo();
 	if( ret )
 	{
-		jeprintf( "Fail Read Firmware Infomation!!!\r\n" );
+		jeprintf( "Fail Load Firmware Infomation!!!\r\n" );
 		goto test_fail;
 	}
 	
