@@ -67,7 +67,7 @@ void MainProcess( void )
 		initFirmwareInfo();
 		
 		// main => backup
-		ret = copyApplication( &gstruFwInfo.mstruBackupAppInfo, &gstruFwInfo.mstruMainAppInfo );
+		ret = copyApplication( &gstruFwInfo.mstruMainAppInfo, &gstruFwInfo.mstruBackupAppInfo );
 		if( ret )	// Fail
 		{
 			jeprintf( "Fail Backup Application!!!\r\n" );
@@ -76,6 +76,9 @@ void MainProcess( void )
 		
 		gstruFwInfo.mucBackuped = 1;
 	}
+	
+	// print Serial Number
+	printSerialNumber();	
 	
 	// Check Booting Mode
 	switch( gstruFwInfo.mucBootMode )

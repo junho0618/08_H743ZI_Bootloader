@@ -18,13 +18,17 @@ uint32_t	guFwInfoChanged = 0;
 void printSerialNumber( void )
 {
 	uint32_t	i;
-	
+
+#if 0	
 	jiprintf( "Serial Number : 0x" );
 	for( i = 0; i < SERIAL_NUMBER_SIZE; i++ )
 	{
 		jiprintf( "%02x", gstruFwInfo.marrucSerialNo[i] );
 	}
 	jiprintf( "\r\n" );
+#else
+	jiprintf( "Serial Number : %s \r\n", gstruFwInfo.marrucSerialNo );
+#endif	
 }
 
 void printFirmwareInfo( void )
@@ -116,7 +120,6 @@ void printFirmwareInfo( void )
 
 uint32_t initFirmwareInfo( void )
 {
-	uint32_t	flashAddress;
 	uint32_t	ret = 0;
 	
 	jprintf( "Start %s\r\n", __FUNCTION__ );
@@ -124,19 +127,8 @@ uint32_t initFirmwareInfo( void )
 	gstruFwInfo.mucBootMode			= BOOT_NORMAL;
 	gstruFwInfo.mucInitialized		= FIRMWARE_INITIALIZED;
 	gstruFwInfo.mucUpdated			= 0x00;
-	memcpy( gstruFwInfo.marrucModelName, MODEL_NAME, MODEL_NAME_SIZE );
-
-	// read serial number	
-	flashAddress = SERIAL_NUMBER_ADD;
-	if( readByteFlash( flashAddress, (uint8_t*)gstruFwInfo.marrucSerialNo, (uint16_t)SERIAL_NUMBER_SIZE ) )
-	{
-		jeprintf( "Fail read Serial Number!!!\r\n" );
-		return 1;
-	}
-	else
-	{
-		printSerialNumber();
-	}
+	memcpy( gstruFwInfo.marrucModelName, MODEL_NAME,	MODEL_NAME_SIZE );
+	memcpy( gstruFwInfo.marrucSerialNo,  SERIAL_NUMBER, SERIAL_NUMBER_SIZE );
 	
 	// Bootloader Info
 	gstruFwInfo.mstruBlInfo.marrucVersion[0]	= 0x01;

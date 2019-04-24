@@ -26,12 +26,12 @@ extern "C" {
 #define FIRMWARE_BACKUPAPP_ADD						((uint32_t)0x08080000)
 #define FIRMWARE_VERIFICATIONAPP_ADD				((uint32_t)0x08160000)
 #define FIRMWARE_INFO_ADD							((uint32_t)0x080E0000)
-#define SERIAL_NUMBER_ADD							((uint32_t)0x081E0000)
 
 #define	VERSION_SIZE								4
 #define MODEL_NAME									"New D-Loger"
 #define	MODEL_NAME_SIZE								sizeof( MODEL_NAME )
-#define	SERIAL_NUMBER_SIZE							12
+#define	SERIAL_NUMBER								"GIT123"
+#define	SERIAL_NUMBER_SIZE							sizeof( SERIAL_NUMBER )
 
 /*---------------------------------------------------------------------------------------------
      Typedefs
