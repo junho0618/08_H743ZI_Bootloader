@@ -23,6 +23,11 @@ void MainProcess( void )
 	uint32_t	ret = 0;
 	
 	jprintf( "Start Main Process!!! \r\n" );
+	
+	HAL_GPIO_WritePin( LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET );
+	HAL_GPIO_WritePin( LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET );
+	HAL_GPIO_WritePin( LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET );
+	
 
 	// Check Verification
 #if ENABLE_VERIFICATION_APP_JUMP	// H/W 구성 후 재코딩...
@@ -103,7 +108,9 @@ void IAP_Process( void )
 	
 	while( 1 )
 	{
-		asm( "NOP" );
+		HAL_GPIO_TogglePin( LED3_GPIO_Port, LED3_Pin );
+		
+		HAL_Delay( 100 );
 	}
 }
 
